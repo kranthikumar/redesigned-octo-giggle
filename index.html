@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enjoy Worlds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Each world owns its palette. The page commits to these looks in both OS themes. */
+  :root {
+    color-scheme: dark;
+    --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Hanken Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --cur-ink: #f6efe4;
+    --cur-accent: #ffb36b;
+  }
+  .w-dawn      { --bg:#14132b; --dot:#ffc58a; --ink:#f6efe4; --muted:#c9c1d6; --accent:#ffb36b; --panel:rgba(20,19,43,.55);   --line:rgba(255,197,138,.20); --code:rgba(0,0,0,.30); }
+  .w-blueprint { --bg:#0b2747; --dot:#8fd8ff; --ink:#e9f4ff; --muted:#a9c4de; --accent:#62ccff; --panel:rgba(8,30,56,.74);    --line:rgba(143,216,255,.26); --code:rgba(0,10,25,.38); }
+  .w-survey    { --bg:#1b2618; --dot:#e6c563; --ink:#f0eedb; --muted:#c0c4a7; --accent:#e6c563; --panel:rgba(22,32,19,.76);   --line:rgba(230,197,99,.22);  --code:rgba(0,0,0,.30); }
+  .w-clinic    { --bg:#e2ede7; --dot:#d4573a; --ink:#16302a; --muted:#46615a; --accent:#bd4529; --panel:rgba(246,251,248,.84); --line:rgba(22,48,42,.14);    --code:rgba(22,48,42,.06); }
+  .w-switch    { --bg:#27102f; --dot:#ff9cb9; --ink:#fdeef3; --muted:#d8b9c9; --accent:#ff8fb1; --panel:rgba(35,12,43,.74);   --line:rgba(255,156,185,.22); --code:rgba(0,0,0,.32); }
+  .w-atlas     { --bg:#dce4f3; --dot:#3653c8; --ink:#141d3d; --muted:#46507a; --accent:#2f4bc0; --panel:rgba(245,248,255,.80); --line:rgba(20,29,61,.14);    --code:rgba(20,29,61,.06); }
+  .w-home      { --bg:#17141f; --dot:#ffc58a; --ink:#f6efe4; --muted:#bdb4c9; --accent:#ffb36b; --panel:rgba(23,20,31,.62);   --line:rgba(255,197,138,.20); --code:rgba(0,0,0,.30); }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: #14132b; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: #14132b;
+    color: #f6efe4;
+    font-family: var(--body);
+    font-size: 1.02rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  #world { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  main { position: relative; z-index: 1; padding-inline: clamp(16px, 5vw, 80px); }
+
+  a { color: inherit; }
+  a:focus-visible { outline: 2px solid var(--accent, var(--cur-accent)); outline-offset: 3px; border-radius: 6px; }
+
+  /* ---------- worlds ---------- */
+  .world {
+    color: var(--ink);
+    padding-block: 24vh;
+    display: flex;
+    align-items: center;
+  }
+  .world[data-place="left"] { justify-content: flex-end; }
+  .panel {
+    width: 100%;
+    max-width: 37rem;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: clamp(22px, 3.2vw, 40px);
+    display: grid;
+    gap: 22px;
+  }
+  .eyebrow {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: .76rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex; gap: .7em; align-items: center; flex-wrap: wrap;
+  }
+  .eyebrow .sep { opacity: .5; }
+  h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+  h1 {
+    font-size: clamp(3rem, 8.4vw, 7.2rem);
+    line-height: .92;
+    letter-spacing: -.035em;
+    font-weight: 800;
+    font-variation-settings: "opsz" 96;
+  }
+  h2 {
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    line-height: 1;
+    letter-spacing: -.03em;
+    font-weight: 750;
+    font-variation-settings: "opsz" 96;
+  }
+  h3 {
+    font-size: .8rem;
+    font-family: var(--mono);
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .lede { margin: 0; font-size: 1.1rem; color: var(--ink); max-width: 62ch; }
+  .lede + .lede { margin-top: -8px; }
+  .muted { color: var(--muted); }
+
+  .chips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips li {
+    font-size: .86rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .chips.apps li { font-family: var(--mono); font-size: .78rem; background: var(--code); }
+  .chips.apps li::before { content: "● "; color: var(--accent); }
+
+  /* ---------- session transcript ---------- */
+  .transcript {
+    font-family: var(--mono);
+    font-size: .82rem;
+    line-height: 1.55;
+    background: var(--code);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: grid;
+    gap: 12px;
+  }
+  .turn { display: grid; grid-template-columns: 4.2em 1fr; gap: 10px; }
+  .turn p { margin: 0; }
+  .who { color: var(--muted); }
+  .turn.enjoy .who { color: var(--accent); font-weight: 500; }
+  .log { list-style: none; margin: 0; padding: 10px 0 0; border-top: 1px dashed var(--line); display: grid; gap: 2px; color: var(--muted); overflow-wrap: anywhere; }
+  .log b { color: var(--accent); font-weight: 500; display: inline-block; width: 1.6em; }
+  .caret { display: inline-block; width: .55em; height: 1em; vertical-align: -2px; background: var(--accent); animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- what people make ---------- */
+  .makes { margin: 0; display: grid; gap: 10px; }
+  .makes div { display: grid; grid-template-columns: 8.5rem 1fr; gap: 14px; align-items: baseline; padding-top: 10px; border-top: 1px solid var(--line); }
+  .makes dt { font-family: var(--display); font-weight: 650; font-size: 1.02rem; }
+  .makes dd { margin: 0; color: var(--muted); font-size: .96rem; }
+
+  /* ---------- hero ---------- */
+  .hero { padding-block: 16vh 20vh; min-height: 0; }
+  .hero .panel { background: transparent; border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; padding-inline: 0; max-width: 44rem; }
+  .hero h1 .accentword { color: var(--accent); display: block; }
+  .wordmark { font-family: var(--display); font-weight: 800; font-size: 1.5rem; letter-spacing: -.04em; display: flex; align-items: center; gap: 10px; }
+  .wordmark i { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 24px var(--accent); }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-width: 30rem; }
+  .legend a {
+    display: grid; grid-template-columns: 14px 9.5rem 1fr; gap: 12px; align-items: center;
+    padding: 8px 10px; margin-inline: -10px; border-radius: 10px; text-decoration: none;
+    transition: background .2s ease;
+  }
+  .legend a:hover { background: rgba(255,255,255,.06); }
+  .legend .sw { width: 10px; height: 10px; border-radius: 3px; background: var(--sw); transform: rotate(45deg); }
+  .legend b { font-family: var(--display); font-weight: 650; }
+  .legend span:last-child { color: var(--muted); font-size: .92rem; }
+  .cue { margin: 0; font-family: var(--mono); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  .cue::after { content: ""; width: 1px; height: 36px; background: linear-gradient(var(--accent), transparent); animation: drip 2.2s ease-in-out infinite; transform-origin: top; }
+  @keyframes drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+  /* ---------- atlas ---------- */
+  .w-atlas { flex-direction: column; align-items: stretch; gap: 28px; }
+  .w-atlas .panel.head { margin-inline: auto; text-align: center; max-width: 42rem; }
+  .w-atlas .panel.head .eyebrow { justify-content: center; }
+  .w-atlas .panel.head .lede { margin-inline: auto; }
+  .atlas-grid { list-style: none; padding: 0; margin: 0 auto; width: 100%; max-width: 1180px; display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .card {
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 20px;
+    display: grid; grid-template-rows: auto auto 1fr auto; gap: 10px;
+    transition: transform .25s ease, border-color .25s ease;
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .card .glyph { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .card h4 { margin: 0; font-family: var(--display); font-size: 1.3rem; line-height: 1.1; letter-spacing: -.02em; font-weight: 700; text-wrap: balance; }
+  .card p { margin: 0; color: var(--muted); font-size: .94rem; }
+  .card code { font-family: var(--mono); font-size: .76rem; background: var(--code); border-radius: 8px; padding: 8px 10px; color: var(--ink); display: block; }
+  .card code::before { content: "› "; color: var(--accent); }
+
+  /* ---------- home ---------- */
+  .w-home { min-height: 100vh; justify-content: center; padding-block: 18vh; box-sizing: border-box; }
+  .w-home .panel { text-align: center; justify-items: center; max-width: 40rem; }
+  .w-home h2 { font-size: clamp(2.6rem, 6.4vw, 5.2rem); }
+  .jump { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .jump a {
+    display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none; padding: 9px 16px; border-radius: 999px;
+    border: 1px solid var(--line); font-weight: 500; font-size: .94rem;
+    transition: background .2s ease, color .2s ease;
+  }
+  .jump a:hover { background: var(--ink); color: var(--bg); }
+  .jump .sw { width: 8px; height: 8px; border-radius: 2px; background: var(--sw); transform: rotate(45deg); }
+  .foot { margin: 0; font-size: .82rem; color: var(--muted); font-family: var(--mono); }
+
+  /* ---------- world rail ---------- */
+  .rail {
+    position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 2;
+    color: var(--cur-ink); transition: color .4s ease;
+  }
+  .rail ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .rail a { display: flex; align-items: center; justify-content: flex-end; gap: 10px; text-decoration: none; padding: 4px 0; }
+  .rail .lbl { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; opacity: 0; transform: translateX(6px); transition: opacity .25s ease, transform .25s ease; white-space: nowrap; }
+  .rail .dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; transition: background .3s ease, transform .3s ease; }
+  .rail a:hover .lbl, .rail a:focus-visible .lbl { opacity: 1; transform: none; }
+  @media (min-width: 1081px) { main { padding-right: clamp(64px, 6vw, 96px); } }
+  .rail a[aria-current="true"] .dot { background: var(--cur-accent); border-color: var(--cur-accent); transform: scale(1.35); }
+
+  @media (max-width: 1080px) {
+    .rail { display: none; }
+    .atlas-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .world { padding-block: 14vh; }
+    .world[data-place="left"] { justify-content: flex-start; }
+    .hero { padding-block: 10vh 14vh; }
+    .hero .panel { background: var(--panel); border-color: var(--line); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); padding-inline: 22px; }
+    .legend a { grid-template-columns: 14px 1fr; }
+    .legend span:last-child { grid-column: 2; margin-top: -8px; }
+    .makes div { grid-template-columns: 1fr; gap: 2px; }
+    .turn { grid-template-columns: 1fr; gap: 2px; }
+    .atlas-grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .caret, .cue::after { animation: none; }
+    .card, .card:hover { transition: none; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="world" aria-hidden="true"></canvas>
+
+<nav class="rail" aria-label="Worlds">
+  <ul>
+    <li><a href="#top"><span class="lbl">Arrival</span><span class="dot"></span></a></li>
+    <li><a href="#builders"><span class="lbl">The Workshop</span><span class="dot"></span></a></li>
+    <li><a href="#product"><span class="lbl">The Map Room</span><span class="dot"></span></a></li>
+    <li><a href="#business"><span class="lbl">The Front Desk</span><span class="dot"></span></a></li>
+    <li><a href="#workflows"><span class="lbl">The Switchboard</span><span class="dot"></span></a></li>
+    <li><a href="#atlas"><span class="lbl">The Atlas</span><span class="dot"></span></a></li>
+    <li><a href="#yours"><span class="lbl">Your world</span><span class="dot"></span></a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ============ ARRIVAL ============ -->
+  <section class="world w-dawn hero" id="top" data-world="dawn" data-place="right">
+    <div class="panel">
+      <div class="wordmark"><i></i>enjoy</div>
+      <p class="eyebrow">Use cases <span class="sep">/</span> Who it’s for</p>
+      <h1>Same app.<span class="accentword">Different worlds.</span></h1>
+      <p class="lede">We’ve sat with a lot of new Enjoy users during onboarding. The same app keeps turning into something different depending on who opens it. Scroll down to travel through the worlds we see most.</p>
+      <ul class="legend">
+        <li><a href="#builders"><span class="sw" style="--sw:#62ccff"></span><b>The Workshop</b><span>Founders &amp; builders</span></a></li>
+        <li><a href="#product"><span class="sw" style="--sw:#e6c563"></span><b>The Map Room</b><span>Product managers</span></a></li>
+        <li><a href="#business"><span class="sw" style="--sw:#8fd1b4"></span><b>The Front Desk</b><span>Small businesses</span></a></li>
+        <li><a href="#workflows"><span class="sw" style="--sw:#ff8fb1"></span><b>The Switchboard</b><span>Knowledge workers</span></a></li>
+        <li><a href="#atlas"><span class="sw" style="--sw:#9fb2ff"></span><b>The Atlas</b><span>Everyone else</span></a></li>
+      </ul>
+      <p class="cue">Scroll to travel</p>
+    </div>
+  </section>
+
+  <!-- ============ 1. BUILDERS ============ -->
+  <section class="world w-blueprint" id="builders" data-world="blueprint" data-place="right">
+    <div class="panel">
+      <p class="eyebrow">The Workshop <span class="sep">/</span> Founders &amp; builders</p>
+      <h2>Build the whole product, not just the code.</h2>
+      <p class="lede">Entrepreneurs and builders use Enjoy to take a product from idea to launch: frontend, backend, marketing, design, and the hundred small jobs in between that usually need a team.</p>
+      <ul class="chips">
+        <li>Solo founders</li><li>Indie hackers</li><li>Agency developers</li><li>Designers who code</li><li>Freelancers</li>
+      </ul>
+      <div class="transcript" role="group" aria-label="Example session">
+        <div class="turn"><span class="who">you</span><p>Add a waitlist to the landing page and email me whenever someone signs up.</p></div>
+        <div class="turn enjoy"><span class="who">enjoy</span><p>Done. The form is on your local preview and signups are saved to the database. I connected your Mail app for the alerts.</p></div>
+        <ul class="log">
+          <li><b>+</b>app/api/waitlist/route.ts</li>
+          <li><b>~</b>components/Hero.tsx</li>
+          <li><b>+</b>db/migrations/004_waitlist.sql</li>
+          <li><b>▸</b>preview running on localhost:3000 <span class="caret"></span></li>
+        </ul>
+      </div>
+      <h3>What people make here</h3>
+      <dl class="makes">
+        <div><dt>Frontend</dt><dd>Landing pages, dashboards, onboarding flows, settings screens</dd></div>
+        <div><dt>Backend</dt><dd>APIs, sign-in, databases, payments and background jobs</dd></div>
+        <div><dt>Marketing</dt><dd>Launch copy, email sequences, pricing pages, SEO articles</dd></div>
+        <div><dt>Design</dt><dd>Logos, icon sets, and a UI kit that keeps every screen consistent</dd></div>
+        <div><dt>Launch</dt><dd>Analytics, error tracking, and a checklist for the big day</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 2. PRODUCT MANAGERS ============ -->
+  <section class="world w-survey" id="product" data-world="survey" data-place="left">
+    <div class="panel">
+      <p class="eyebrow">The Map Room <span class="sep">/</span> Product managers</p>
+      <h2>Stop waiting on engineering. Walk the codebase yourself.</h2>
+      <p class="lede">Product managers run their company’s source on their own computer. They learn how things really work, try changes, and bring engineers a working suggestion instead of another ticket.</p>
+      <ul class="chips">
+        <li>Product managers</li><li>Product designers</li><li>Support leads</li><li>QA &amp; release managers</li><li>Non-technical founders</li>
+      </ul>
+      <div class="transcript" role="group" aria-label="Example session">
+        <div class="turn"><span class="who">you</span><p>Why do trial users see a blank screen after onboarding step 3?</p></div>
+        <div class="turn enjoy"><span class="who">enjoy</span><p>OnboardingFlow.tsx skips loading plan data when the plan is “trial”. I fixed it on a new branch and wrote a note for the team.</p></div>
+        <ul class="log">
+          <li><b>⎇</b>branch pm/trial-blank-screen</li>
+          <li><b>~</b>src/onboarding/OnboardingFlow.tsx:142 (+2 −1)</li>
+          <li><b>✓</b>48 tests passed</li>
+          <li><b>✎</b>pull request description drafted <span class="caret"></span></li>
+        </ul>
+      </div>
+      <h3>What people make here</h3>
+      <dl class="makes">
+        <div><dt>Answers</dt><dd>“How does billing decide who gets the annual discount?”</dd></div>
+        <div><dt>Prototypes</dt><dd>A real branch that shows the change instead of describing it</dd></div>
+        <div><dt>Small fixes</dt><dd>Copy, typos, spacing and obvious bugs, sent as ready-to-review PRs</dd></div>
+        <div><dt>Specs</dt><dd>Requirements written against the code that exists today</dd></div>
+        <div><dt>Scope checks</dt><dd>A sense of how big something is before the planning meeting</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 3. SMALL BUSINESS ============ -->
+  <section class="world w-clinic" id="business" data-world="clinic" data-place="right">
+    <div class="panel">
+      <p class="eyebrow">The Front Desk <span class="sep">/</span> Small businesses</p>
+      <h2>Software shaped exactly like your business.</h2>
+      <p class="lede">Owners and office managers build the admin and productivity tools their team actually needs. One person we met built a desktop app for their medical office so routine front-desk tasks get done faster and stay organized.</p>
+      <ul class="chips">
+        <li>Medical &amp; dental offices</li><li>Shops &amp; salons</li><li>Restaurants</li><li>Real-estate offices</li><li>Nonprofits</li><li>Bookkeepers</li>
+      </ul>
+      <div class="transcript" role="group" aria-label="Example session">
+        <div class="turn"><span class="who">you</span><p>Build a front-desk app: check patients in, print today’s schedule, and flag anyone missing an insurance card.</p></div>
+        <div class="turn enjoy"><span class="who">enjoy</span><p>“Front Desk” is ready as a desktop app. Records stay in a file on this computer. Three patients today are missing insurance cards.</p></div>
+        <ul class="log">
+          <li><b>+</b>Front Desk.app</li>
+          <li><b>▤</b>~/FrontDesk/clinic.db, stored on this computer</li>
+          <li><b>⎙</b>Today’s schedule: 23 appointments</li>
+          <li><b>⚑</b>3 missing insurance cards <span class="caret"></span></li>
+        </ul>
+      </div>
+      <h3>What people make here</h3>
+      <dl class="makes">
+        <div><dt>Admin tools</dt><dd>Intake, check-in, and appointment reminders</dd></div>
+        <div><dt>Inventory</dt><dd>Stock counts, reorder alerts, and supplier lists</dd></div>
+        <div><dt>Paperwork</dt><dd>Invoices, quotes, and forms filled in from your own records</dd></div>
+        <div><dt>Team tools</dt><dd>Shift schedules, opening checklists, and handover notes</dd></div>
+        <div><dt>Dashboards</dt><dd>This week’s bookings, revenue and no-shows at a glance</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 4. KNOWLEDGE WORKERS ============ -->
+  <section class="world w-switch" id="workflows" data-world="switchboard" data-place="left">
+    <div class="panel">
+      <p class="eyebrow">The Switchboard <span class="sep">/</span> Knowledge workers</p>
+      <h2>Wire your whole desktop into workflows that run themselves.</h2>
+      <p class="lede">Your computer already holds your files, your inbox and your chats. Enjoy connects them into automations you control. Everything runs on your own machine, with no cloud account required.</p>
+      <ul class="chips apps" aria-label="Apps people connect">
+        <li>Mail</li><li>Signal</li><li>Discord</li><li>Slack</li><li>Browser</li><li>Calendar</li><li>Files</li><li>Notes</li>
+      </ul>
+      <div class="transcript" role="group" aria-label="Example session">
+        <div class="turn"><span class="who">you</span><p>Every weekday at 8, summarize my unread email, Slack and Signal, and put the three most urgent things on top.</p></div>
+        <div class="turn enjoy"><span class="who">enjoy</span><p>“Morning digest” is scheduled for weekdays at 8:00. It reads from the apps on this computer. Your first digest arrives tomorrow.</p></div>
+        <ul class="log">
+          <li><b>⏱</b>Mon–Fri 08:00</li>
+          <li><b>⇢</b>Mail · Slack · Signal</li>
+          <li><b>⌂</b>runs locally, nothing leaves this machine</li>
+          <li><b>✉</b>writes to Notes › Daily › 2026-09-28 <span class="caret"></span></li>
+        </ul>
+      </div>
+      <h3>What people make here</h3>
+      <dl class="makes">
+        <div><dt>Digests</dt><dd>One morning summary across every inbox and channel</dd></div>
+        <div><dt>Filing</dt><dd>Receipts, invoices and PDFs sorted into the right folders</dd></div>
+        <div><dt>Replies</dt><dd>Drafts in your voice, waiting for your approval before sending</dd></div>
+        <div><dt>Watchers</dt><dd>Alerts when a web page, price or shared document changes</dd></div>
+        <div><dt>Meeting prep</dt><dd>Notes, past threads and files gathered before each call</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 5. EVERYONE ELSE ============ -->
+  <section class="world w-atlas" id="atlas" data-world="atlas" data-place="wide">
+    <div class="panel head">
+      <p class="eyebrow">The Atlas <span class="sep">/</span> Everyone else</p>
+      <h2>More worlds keep appearing.</h2>
+      <p class="lede">The four worlds above come up in almost every onboarding call. These come up often enough that we’re watching them grow.</p>
+    </div>
+    <ul class="atlas-grid">
+      <li class="card"><span class="glyph">Research</span><h4>Researchers &amp; analysts</h4><p>Clean messy exports, run the analysis and chart it, with sensitive data that never leaves the laptop.</p><code>Merge these 14 CSVs and show churn by region</code></li>
+      <li class="card"><span class="glyph">Design</span><h4>Designers</h4><p>Turn a static mockup into a clickable prototype built from real components.</p><code>Make this Figma export a working settings page</code></li>
+      <li class="card"><span class="glyph">Learning</span><h4>Students &amp; career changers</h4><p>Learn by building a real project, with every step explained in plain language.</p><code>Help me build a habit tracker and explain each file</code></li>
+      <li class="card"><span class="glyph">Writing</span><h4>Writers &amp; creators</h4><p>Run a newsletter pipeline: drafts, edits, images and scheduling in one place.</p><code>Turn this week’s notes into a newsletter draft</code></li>
+      <li class="card"><span class="glyph">Finance</span><h4>Finance &amp; operations</h4><p>Reconcile spreadsheets and produce the month-end report straight from raw exports.</p><code>Match bank.csv against invoices.xlsx</code></li>
+      <li class="card"><span class="glyph">Classroom</span><h4>Teachers</h4><p>Make quizzes, grading helpers and classroom tools that fit the syllabus.</p><code>Build a quiz app from chapter 4 of my notes</code></li>
+      <li class="card"><span class="glyph">Admin</span><h4>IT &amp; office admins</h4><p>Script new-laptop setup, account checklists and routine maintenance.</p><code>Write a setup script for new hires’ Macs</code></li>
+      <li class="card"><span class="glyph">Home</span><h4>Tinkerers</h4><p>Build a budget tracker, a recipe box, or a dashboard for the smart lights.</p><code>Track my spending from these bank statements</code></li>
+    </ul>
+  </section>
+
+  <!-- ============ YOUR WORLD ============ -->
+  <section class="world w-home" id="yours" data-world="home" data-place="center">
+    <div class="panel">
+      <p class="eyebrow">Your world</p>
+      <h2>Which world is yours?</h2>
+      <p class="lede">Enjoy runs on your computer, works with your files and apps, and becomes whatever you need it to be.</p>
+      <ul class="jump">
+        <li><a href="#builders"><span class="sw" style="--sw:#62ccff"></span>I’m building a product</a></li>
+        <li><a href="#product"><span class="sw" style="--sw:#e6c563"></span>I manage a product</a></li>
+        <li><a href="#business"><span class="sw" style="--sw:#8fd1b4"></span>I run a small business</a></li>
+        <li><a href="#workflows"><span class="sw" style="--sw:#ff8fb1"></span>I want my desktop automated</a></li>
+      </ul>
+      <p class="foot">Use cases gathered from Enjoy onboarding conversations.</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(() => {
+  const canvas = document.getElementById('world');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const hex = h => { h = h.trim().replace('#', ''); return [0, 2, 4].map(k => parseInt(h.slice(k, k + 2), 16)); };
+
+  const worlds = [...document.querySelectorAll('.world')].map(el => {
+    const cs = getComputedStyle(el);
+    return {
+      el, id: el.id, name: el.dataset.world, place: el.dataset.place || 'right',
+      bg: hex(cs.getPropertyValue('--bg')), dot: hex(cs.getPropertyValue('--dot')),
+      ink: cs.getPropertyValue('--ink').trim(), accent: cs.getPropertyValue('--accent').trim(),
+      center: 0
+    };
+  });
+  const railLinks = [...document.querySelectorAll('.rail a')];
+
+  // ---------- particles ----------
+  let W = innerWidth, H = innerHeight, mobile = W < 760;
+  const N = mobile ? 750 : 1500;
+  const PX = new Float32Array(N), PY = new Float32Array(N);
+  const R1 = new Float32Array(N), R2 = new Float32Array(N), R3 = new Float32Array(N), R4 = new Float32Array(N), R5 = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    R1[i] = Math.random(); R2[i] = Math.random(); R3[i] = Math.random(); R4[i] = Math.random(); R5[i] = Math.random();
+    PX[i] = Math.random() * W; PY[i] = Math.random() * H;
+  }
+
+  // Each scene writes a point in a unit box (about -0.5..0.5) for particle i at time t.
+  const CL = [[-0.4,-0.3],[-0.12,-0.4],[0.18,-0.33],[0.42,-0.22],[0.4,0.22],[0.14,0.4],[-0.2,0.36],[-0.44,0.12]];
+  const SCENES = {
+    // Arrival: a slow orbiting sun
+    dawn(i, t, o) {
+      if (R4[i] < 0.1) {
+        const a = R2[i] * TAU + t * 0.3, r = Math.sqrt(R3[i]) * 0.08;
+        o[0] = Math.cos(a) * r; o[1] = Math.sin(a) * r; return;
+      }
+      const ring = Math.floor(R1[i] * 7);
+      const a = R2[i] * TAU + t * (0.05 + 0.12 / (ring + 1));
+      const r = 0.12 + ring * 0.055 + (R3[i] - 0.5) * 0.018;
+      o[0] = Math.cos(a) * r; o[1] = Math.sin(a) * r * 0.94;
+    },
+    // Workshop: three isometric blueprint layers, frontend / backend / marketing
+    blueprint(i, t, o) {
+      const layer = Math.floor(R1[i] * 3);
+      const line = Math.floor(R3[i] * 7) / 6;
+      let u, v;
+      if (R4[i] < 0.5) { u = R2[i]; v = line; } else { u = line; v = R2[i]; }
+      u -= 0.5; v -= 0.5;
+      const lift = (layer - 1) * 0.25 + Math.sin(t * 0.9 + layer * 1.7) * 0.015;
+      o[0] = (u - v) * 0.44; o[1] = (u + v) * 0.22 - lift;
+    },
+    // Map Room: topographic contour lines over a hill
+    survey(i, t, o) {
+      const line = Math.floor(R1[i] * 11);
+      const x = R2[i] - 0.5;
+      const base = (line - 5) * 0.075;
+      const hill = 0.1 * Math.exp(-((x - 0.1) ** 2) / 0.03) * (1 - Math.abs(line - 5) / 6);
+      o[0] = x * 0.96;
+      o[1] = base + Math.cos(x * Math.PI) * 0.035 * Math.sin(x * 8 + line * 0.7 + t * 0.4) - hill;
+    },
+    // Front Desk: a wall of forms and schedule cards
+    clinic(i, t, o) {
+      const card = Math.floor(R1[i] * 12), c = card % 4, rw = (card / 4) | 0;
+      const w = 0.2, h = 0.25;
+      const cx = (c - 1.5) * 0.24, cy = (rw - 1) * 0.3 + Math.sin(t * 0.7 + card * 1.3) * 0.008;
+      if (R4[i] < 0.5) {
+        let p = R2[i] * 2 * (w + h), x, y;
+        if (p < w) { x = p; y = 0; }
+        else if ((p -= w) < h) { x = w; y = p; }
+        else if ((p -= h) < w) { x = w - p; y = h; }
+        else { p -= w; x = 0; y = h - p; }
+        o[0] = cx - w / 2 + x; o[1] = cy - h / 2 + y;
+      } else {
+        const ln = Math.floor(R3[i] * 4);
+        const len = ln === 0 ? 0.55 : ln === 3 ? 0.4 : 0.85;
+        o[0] = cx - w / 2 + 0.03 + R2[i] * (w - 0.06) * len;
+        o[1] = cy - h / 2 + 0.05 + ln * 0.05;
+      }
+    },
+    // Switchboard: apps orbiting a hub, messages flowing inward
+    switchboard(i, t, o) {
+      const K = 7, k = Math.floor(R1[i] * K);
+      const ang = k / K * TAU - Math.PI / 2 + t * 0.05;
+      const sx = Math.cos(ang) * 0.4, sy = Math.sin(ang) * 0.4;
+      const q = R4[i];
+      if (q < 0.14) {
+        const a = R2[i] * TAU + t * 0.2, r = 0.075 + (R3[i] - 0.5) * 0.012;
+        o[0] = Math.cos(a) * r; o[1] = Math.sin(a) * r;
+      } else if (q < 0.42) {
+        const a = R2[i] * TAU, r = 0.045 + (R3[i] - 0.5) * 0.012;
+        o[0] = sx + Math.cos(a) * r; o[1] = sy + Math.sin(a) * r;
+      } else {
+        const f = (R2[i] + t * 0.16) % 1;
+        const bend = Math.sin(f * Math.PI) * 0.08;
+        o[0] = sx * (1 - f) - Math.sin(ang) * bend;
+        o[1] = sy * (1 - f) + Math.cos(ang) * bend;
+      }
+    },
+    // Atlas: a loop of constellations
+    atlas(i, t, o) {
+      const k = Math.floor(R1[i] * 8), c = CL[k];
+      if (R4[i] < 0.22) {
+        const n = CL[(k + 1) % 8], f = R2[i];
+        o[0] = c[0] + (n[0] - c[0]) * f; o[1] = c[1] + (n[1] - c[1]) * f; return;
+      }
+      const a = R2[i] * TAU + t * 0.1, r = 0.06 * Math.pow(R3[i], 0.7);
+      o[0] = c[0] + Math.cos(a) * r; o[1] = c[1] + Math.sin(a) * r * 0.8;
+    },
+    // Your world: a portal
+    home(i, t, o) {
+      if (R4[i] < 0.7) {
+        const a = R2[i] * TAU + t * 0.06;
+        const r = 0.44 + (R3[i] - 0.5) * 0.035 + 0.01 * Math.sin(a * 6 + t);
+        o[0] = Math.cos(a) * r; o[1] = Math.sin(a) * r;
+      } else {
+        const r = 0.2 + Math.pow(R2[i], 0.6) * 0.2;
+        const a = R1[i] * TAU + t * 0.15 + r * 9;
+        o[0] = Math.cos(a) * r; o[1] = Math.sin(a) * r;
+      }
+    }
+  };
+
+  function placement(w) {
+    if (mobile) { const s = Math.min(W * 0.95, H * 0.62); return { cx: W / 2, cy: H / 2, sx: s, sy: s }; }
+    if (w.place === 'wide') return { cx: W / 2, cy: H / 2, sx: W * 0.92, sy: H * 0.9 };
+    if (w.place === 'center') { const s = Math.min(W, H) * 0.95; return { cx: W / 2, cy: H / 2, sx: s, sy: s }; }
+    const s = Math.min(W * 0.36, H * 0.78);
+    return { cx: w.place === 'left' ? W * 0.27 : W * 0.72, cy: H / 2, sx: s, sy: s };
+  }
+
+  // ---------- sizing ----------
+  function sizeCanvas() {
+    W = innerWidth; H = innerHeight; mobile = W < 760;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    measure();
+  }
+  function measure() {
+    for (const w of worlds) {
+      const r = w.el.getBoundingClientRect();
+      w.center = r.top + scrollY + r.height / 2;
+    }
+  }
+  addEventListener('resize', sizeCanvas);
+  if ('ResizeObserver' in window) new ResizeObserver(measure).observe(document.querySelector('main'));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  sizeCanvas();
+
+  // ---------- pointer ----------
+  let mx = -1e4, my = -1e4;
+  addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; }, { passive: true });
+  document.addEventListener('pointerleave', () => { mx = my = -1e4; });
+
+  // ---------- scroll → world blend ----------
+  function blend() {
+    const anchor = scrollY + H / 2;
+    if (anchor <= worlds[0].center) return { a: 0, b: 0, t: 0 };
+    let a = 0;
+    for (let k = 0; k < worlds.length; k++) if (worlds[k].center <= anchor) a = k;
+    if (a === worlds.length - 1) return { a, b: a, t: 0 };
+    const raw = (anchor - worlds[a].center) / (worlds[a + 1].center - worlds[a].center);
+    return { a, b: a + 1, t: clamp((raw - 0.28) / 0.44, 0, 1) };
+  }
+
+  let lastBg = '', active = -1;
+  const oA = [0, 0], oB = [0, 0];
+
+  function frame(now) {
+    const time = reduce ? 0 : now / 1000;
+    const { a, b, t } = blend();
+    const A = worlds[a], B = worlds[b];
+    const e = t * t * (3 - 2 * t);
+
+    const bg = A.bg.map((c, k) => Math.round(c + (B.bg[k] - c) * e));
+    const bgStr = `rgb(${bg[0]},${bg[1]},${bg[2]})`;
+    if (bgStr !== lastBg) {
+      document.body.style.backgroundColor = bgStr;
+      document.documentElement.style.backgroundColor = bgStr;
+      lastBg = bgStr;
+    }
+    const cur = t < 0.5 ? a : b;
+    if (cur !== active) {
+      active = cur;
+      const w = worlds[cur];
+      document.body.style.setProperty('--cur-ink', w.ink);
+      document.body.style.setProperty('--cur-accent', w.accent);
+      railLinks.forEach(l => l.setAttribute('aria-current', l.getAttribute('href') === '#' + w.id ? 'true' : 'false'));
+    }
+
+    const dot = A.dot.map((c, k) => Math.round(c + (B.dot[k] - c) * e));
+    const pa = placement(A), pb = placement(B), fa = SCENES[A.name], fb = SCENES[B.name];
+    const same = a === b;
+    const ease = reduce ? 1 : 0.085;
+    const R = mobile ? 0 : 110, R2 = R * R;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = `rgb(${dot[0]},${dot[1]},${dot[2]})`;
+    ctx.globalAlpha = mobile ? 0.5 : 0.9;
+    const base = mobile ? 1.3 : 1.7;
+
+    for (let i = 0; i < N; i++) {
+      fa(i, time, oA);
+      let tx = pa.cx + oA[0] * pa.sx, ty = pa.cy + oA[1] * pa.sy;
+      if (!same) {
+        fb(i, time, oB);
+        let k = clamp((t - R5[i] * 0.3) / 0.7, 0, 1);
+        k = k * k * (3 - 2 * k);
+        tx += (pb.cx + oB[0] * pb.sx - tx) * k;
+        ty += (pb.cy + oB[1] * pb.sy - ty) * k;
+      }
+      PX[i] += (tx - PX[i]) * ease;
+      PY[i] += (ty - PY[i]) * ease;
+
+      let x = PX[i], y = PY[i];
+      if (R) {
+        const dx = x - mx, dy = y - my, d2 = dx * dx + dy * dy;
+        if (d2 < R2 && d2 > 0.01) {
+          const d = Math.sqrt(d2), f = (1 - d / R) * 26;
+          x += dx / d * f; y += dy / d * f;
+        }
+      }
+      const sz = base * (0.6 + R3[i] * 0.9);
+      ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
